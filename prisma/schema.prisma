@@ -1,0 +1,168 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(uuid())
+  nome         String?
+  email        String     @unique
+  senha        String?
+  emailVerified DateTime?
+  image        String?
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  Perfil       Perfil[]
+  Assinatura   Assinatura[]
+  Material     Material[]
+  Pagamento    Pagamento[]
+  Compra       Compra[]
+
+  Authenticator Authenticator[]
+
+  Session Session[]
+
+  Account Account[]
+}
+
+model Perfil{
+  usuario_id String @id
+  usuario User @relation(fields: [usuario_id],references: [id])
+  code String @unique
+  num_bi String @unique @db.VarChar(20)
+  telefone String @unique @db.VarChar(10)
+  tipo  String 
+}
+
+model Pacote{
+  id           String        @id @default(uuid())
+  nome String
+  descricao String
+  preco Decimal @db.Decimal(10,2)
+  duracao Int?
+
+  Assinatura Assinatura[]
+}
+
+model Assinatura{
+  id           String        @id @default(uuid())
+  usuario_id String 
+  usuario User @relation(fields: [usuario_id],references: [id])
+  pacote_id String
+  pacote Pacote @relation(fields: [pacote_id],references: [id])
+  inicio DateTime @db.Date
+  fim DateTime @db.Date
+}
+
+model Categoria{
+  id           String        @id @default(uuid())
+  nome String
+
+  Material Material[]
+}
+
+model Material{
+  id           String        @id @default(uuid())
+  titulo String
+  categoria_id String
+  categoria Categoria @relation(fields: [categoria_id],references: [id])
+  tipo String
+  descricao String
+  preco Decimal @db.Decimal(10,2)
+  arquivo String
+  data_publicacao DateTime @db.Date
+  docente_id String
+  usuario User @relation(fields: [docente_id],references: [id])
+
+  Compra Compra[]
+}
+
+model Pagamento{
+  id           String        @id @default(uuid())
+  usuario_id String 
+  usuario User @relation(fields: [usuario_id],references: [id])
+  valor Decimal @db.Decimal(10,2)
+  data_pagamento DateTime @db.Date
+  metodo String
+  status String
+
+  Compra Compra[]
+}
+
+model Compra{
+  id           String        @id @default(uuid())
+  usuario_id String
+  usuario User @relation(fields: [usuario_id],references: [id])
+  material_id String
+  material Material @relation(fields: [material_id],references: [id])
+  pagamento_id String
+  pagamento Pagamento @relation(fields: [pagamento_id],references: [id])
+  data_compra DateTime @db.Date 
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+ 
+  usuario User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@id([provider, providerAccountId])
+}
+ 
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  usuario User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+ 
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+ 
+  @@id([identifier, token])
+}
+ 
+// Optional for WebAuthn support
+model Authenticator {
+  credentialID         String  @unique
+  userId               String
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+ 
+  usuario User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@id([userId, credentialID])
+}
